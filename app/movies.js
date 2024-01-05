@@ -61,7 +61,7 @@ export default async function Movies() {
             hours: movie.hours
                 .filter(hour => new Date(hour.eventDateTime) - Date.now() > 0 || new Date(hour.eventDateTime) - Date.now() <= 20 * 60 * 1000) // Filter showtimes that haven't started yet and are within the next 20 minutes
                 .map(hour => ({
-                    hour: new Date(hour.eventDateTime).toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw', hour: 'numeric', minute: 'numeric' }),
+                    hour: new Date(hour.eventDateTime).toLocaleString('en-US', { hour12: false, hour: 'numeric', minute: 'numeric' }),
                     link: hour.bookingLink,
                     attributeIds: hour.attributeIds
                 }))
