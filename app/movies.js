@@ -37,21 +37,13 @@ export default async function Movies() {
     let movies = [];
     let events = [];
     for (const cinema of cinemas) {
-        const data = await getData(`https://www.cinema-city.pl/pl/data-api-service/v1/quickbook/10103/film-events/in-cinema/${cinema.id}/at-date/2024-01-05?attr=&lang=pl_PL`, {
-            "headers": {
-                "accept": "application/json;charset=utf-8",
-                "accept-language": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6",
-                "cache-control": "no-cache",
-                "pragma": "no-cache",
-                "priority": "u=1, i",
-                "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": "\"Windows\"",
-                "sec-fetch-dest": "empty",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-site": "same-origin"
-              }
-        });
+        const currentDate = new Date();
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const date = `${year}-${month}-${day}`;
+
+        const data = await getData(`https://www.cinema-city.pl/pl/data-api-service/v1/quickbook/10103/film-events/in-cinema/${cinema.id}/at-date/${date}?attr=&lang=pl_PL`);
         events.push(...data.body.events);
         const films = data.body.films.map((film) => {
             const cinemaEvents = data.body.events.filter(event => event.filmId === film.id);
@@ -67,14 +59,12 @@ export default async function Movies() {
         uniqueMovies[movie.name].cinema = [...new Set([...uniqueMovies[movie.name].cinema, ...movie.cinema.map(cinema => ({
             name: cinema,
             hours: movie.hours
-                .filter(hour => new Date(hour.eventDateTime) - Date.now() > 20) // Filter hours that are 20 minutes away
+                .filter(hour => new Date(hour.eventDateTime) - Date.now() > 0 || new Date(hour.eventDateTime) - Date.now() <= 20 * 60 * 1000) // Filter showtimes that haven't started yet and are within the next 20 minutes
                 .map(hour => ({
-                    hour: new Date(hour.eventDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    hour: new Date(hour.eventDateTime).toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw', hour: 'numeric', minute: 'numeric' }),
                     link: hour.bookingLink,
                     attributeIds: hour.attributeIds
                 }))
-
-
         }))])];
         return uniqueMovies;
     }, {}));
