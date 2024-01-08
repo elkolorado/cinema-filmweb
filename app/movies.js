@@ -9,7 +9,7 @@ async function getData(url) {
 
 async function getRating(id) {
     try {
-        const response = await fetch(`https://www.filmweb.pl/api/v1/film/${id}/rating`);
+        const response = await fetch(`https://www.filmweb.pl/api/v1/film/${id}/rating`, { cache: 'no-store' });
         const data = await response.json();
         return data;
     } catch (error) {
@@ -20,12 +20,12 @@ async function getRating(id) {
 
 async function getMovieId(title) {
     const encodedTitle = encodeURIComponent(title);
-    const response = await fetch(`https://www.filmweb.pl/api/v1/live/search?query=${encodedTitle}&pageSize=6`);
+    const response = await fetch(`https://www.filmweb.pl/api/v1/live/search?query=${encodedTitle}&pageSize=6`, { cache: 'no-store' });
     const data = await response.json();
     return data.searchHits[0].id;
 }
 
-export default async function Movies() {
+export default async function Movies({ showAvailable}) {
     // const movies = await getData(`https://www.cinema-city.pl/pl/data-api-service/v1/quickbook/10103/film-events/in-cinema/${cinemaId}/at-date/2024-01-04?attr=&lang=pl_PL`);
 
     const cinemas = [
@@ -36,14 +36,16 @@ export default async function Movies() {
 
     let movies = [];
     let events = [];
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    const date = `${year}-${month}-${day}`;
     for (const cinema of cinemas) {
-        const currentDate = new Date();
-        const year = currentDate.getFullYear();
-        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const day = String(currentDate.getDate()).padStart(2, '0');
-        const date = `${year}-${month}-${day}`;
 
-        const data = await getData(`https://www.cinema-city.pl/pl/data-api-service/v1/quickbook/10103/film-events/in-cinema/${cinema.id}/at-date/${date}?attr=&lang=pl_PL`);
+
+        const data = await getData(`https://www.cinema-city.pl/pl/data-api-service/v1/quickbook/10103/film-events/in-cinema/${cinema.id}/at-date/${date}?attr=&lang=pl_PL`, 
+        { cache: 'no-store' });
         events.push(...data.body.events);
         const films = data.body.films.map((film) => {
             const cinemaEvents = data.body.events.filter(event => event.filmId === film.id);
@@ -59,17 +61,17 @@ export default async function Movies() {
         uniqueMovies[movie.name].cinema = [...new Set([...uniqueMovies[movie.name].cinema, ...movie.cinema.map(cinema => ({
             name: cinema,
             hours: movie.hours
-                .filter(hour => new Date(hour.eventDateTime) - Date.now() > 0 || new Date(hour.eventDateTime) - Date.now() <= 20 * 60 * 1000) // Filter showtimes that haven't started yet and are within the next 20 minutes
+                .filter(hour => new Date(hour.eventDateTime) - Date.now() > 0 || new Date(hour.eventDateTime) - Date.now() >= 20 * 60 * 1000) // Filter showtimes that haven't started yet and are within the next 20 minutes
                 .map(hour => ({
                     hour: new Date(hour.eventDateTime).toLocaleString('en-US', { hour12: false, hour: 'numeric', minute: 'numeric' }),
                     link: hour.bookingLink,
-                    attributeIds: hour.attributeIds
+                    attributeIds: hour.attributeIds,
+                    ...hour
                 }))
         }))])];
         return uniqueMovies;
     }, {}));
 
-    console.log(movies[2].cinema[0].hours[0]);
 
 
     for (const movie of movies) {
@@ -84,13 +86,28 @@ export default async function Movies() {
     }
 
     // Sort movies by rating in descending order
-    movies.sort((a, b) => b.rating - a.rating);
+    movies.sort((a, b) => {
+        return b.rating - a.rating; // Sort by rating when both movies have showtimes
 
+        const aHoursLength = a.cinema.flatMap(cinema => cinema.hours).length;
+        const bHoursLength = b.cinema.flatMap(cinema => cinema.hours).length;
+
+        if (aHoursLength === 0 && bHoursLength === 0) {
+            return b.rating - a.rating; // Sort by rating when both movies have no showtimes
+        } else if (aHoursLength === 0) {
+            return 1; // Move movies with no showtimes to the end
+        } else if (bHoursLength === 0) {
+            return -1; // Keep movies with showtimes at the beginning
+        } else {
+            return b.rating - a.rating; // Sort by rating when both movies have showtimes
+        }
+    });
     return (
         <>
-            <div className="row mt-5 row-cols-md-4 row-cols-2 g-5">
+            <h1 className="display-6 my-5">Cinema City • {day}.{month}.{year}</h1>
+            <div className="row  row-cols-md-4 row-cols-2 g-5">
                 {movies.map((movie) => (
-                    <div key={movie.id} className="col">
+                    <div key={movie.id} className="col" data-available={movie.cinema.flatMap(c => c.hours).length > 0}>
                         <div className="card h-100">
                             <div className="position-relative">
                                 <Link href={movie.link} >

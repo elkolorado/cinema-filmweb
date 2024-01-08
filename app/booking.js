@@ -37,8 +37,7 @@ function bookingMovieType(booking){
 }
 
 export default function Booking({ booking }) {
-
     return (
-        <Link href={booking.link} className="badge text-bg-secondary text-decoration-none me-1">{booking.hour} • <span className="fw-normal">{bookingMovieType(booking)} {bookingLangDetails(booking)}</span> </Link>
+        <Link href={booking.link} className="badge text-bg-secondary text-decoration-none me-1">{booking.hour} • <span className="fw-normal">{bookingMovieType(booking)} {bookingLangDetails(booking)} (SALA {booking.auditoriumTinyName}) </span> </Link>
     )
 }
