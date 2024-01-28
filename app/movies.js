@@ -19,10 +19,15 @@ async function getRating(id) {
 }
 
 async function getMovieId(title) {
-    const encodedTitle = encodeURIComponent(title);
-    const response = await fetch(`https://www.filmweb.pl/api/v1/live/search?query=${encodedTitle}&pageSize=6`, { cache: 'no-store' });
-    const data = await response.json();
-    return data.searchHits[0].id;
+    try {
+        const encodedTitle = encodeURIComponent(title);
+        const response = await fetch(`https://www.filmweb.pl/api/v1/live/search?query=${encodedTitle}&pageSize=6`, { cache: 'no-store' });
+        const data = await response.json();
+        return data.searchHits[0].id;
+    } catch (error) {
+        console.error(`Error occurred while fetching movie ID for title: ${title}`, error);
+        return null;
+    }
 }
 
 export default async function Movies({ showAvailable}) {
@@ -81,27 +86,21 @@ export default async function Movies({ showAvailable}) {
             movie.rating = rating.rate.toFixed(1);
             movie.count = rating.count;
         } catch (error) {
-            // console.error(`Error occurred for movie: ${movie.name}`, error);
+            console.error(`Error occurred for movie: ${movie.name}`, error);
         }
     }
 
-    // Sort movies by rating in descending order
+    // // Sort movies by rating in descending order
+    // movies = movies.sort((a, b) => {
+    //     return parseFloat(b.rating) > parseFloat(a.rating); // Sort by rating when both movies have showtimes
+    // });
+
+    // // Sort movies by rating in descending order and for undefined ratings, set rating to 0
     movies.sort((a, b) => {
-        return b.rating - a.rating; // Sort by rating when both movies have showtimes
-
-        const aHoursLength = a.cinema.flatMap(cinema => cinema.hours).length;
-        const bHoursLength = b.cinema.flatMap(cinema => cinema.hours).length;
-
-        if (aHoursLength === 0 && bHoursLength === 0) {
-            return b.rating - a.rating; // Sort by rating when both movies have no showtimes
-        } else if (aHoursLength === 0) {
-            return 1; // Move movies with no showtimes to the end
-        } else if (bHoursLength === 0) {
-            return -1; // Keep movies with showtimes at the beginning
-        } else {
-            return b.rating - a.rating; // Sort by rating when both movies have showtimes
-        }
+        return parseFloat(b.rating || 0) - parseFloat(a.rating || 0);
     });
+
+
     return (
         <>
             <h1 className="display-6 my-5">Cinema City • {day}.{month}.{year}</h1>
