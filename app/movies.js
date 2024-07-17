@@ -27,8 +27,6 @@ async function getMovieId(title) {
             },
             next: { revalidate: 36000 } });
         const data = await response.json();
-        // const data = await response.text();
-        console.log(data);
         return data.searchHits[0].id;
     } catch (error) {
         console.error(`Error occurred while fetching movie ID for title: ${title}`, error);
@@ -82,7 +80,6 @@ export default async function Movies({ showAvailable}) {
         }))])];
         return uniqueMovies;
     }, {}));
-
 
 
     for (const movie of movies) {
