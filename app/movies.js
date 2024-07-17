@@ -9,7 +9,7 @@ async function getData(url) {
 
 async function getRating(id) {
     try {
-        const response = await fetch(`https://www.filmweb.pl/api/v1/film/${id}/rating`, { cache: 'no-store' });
+        const response = await fetch(`https://www.filmweb.pl/api/v1/film/${id}/rating`, { next: { revalidate: 3600 } });
         const data = await response.json();
         return data;
     } catch (error) {
@@ -21,8 +21,14 @@ async function getRating(id) {
 async function getMovieId(title) {
     try {
         const encodedTitle = encodeURIComponent(title);
-        const response = await fetch(`https://www.filmweb.pl/api/v1/live/search?query=${encodedTitle}&pageSize=6`, { cache: 'no-store' });
+        const response = await fetch(`https://www.filmweb.pl/api/v1/live/search?query=${encodedTitle}&pageSize=6`, { 
+            headers: {
+                "X-Locale": "pl_PL",
+            },
+            next: { revalidate: 36000 } });
         const data = await response.json();
+        // const data = await response.text();
+        console.log(data);
         return data.searchHits[0].id;
     } catch (error) {
         console.error(`Error occurred while fetching movie ID for title: ${title}`, error);
