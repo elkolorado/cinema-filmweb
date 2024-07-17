@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import Booking from './booking';
+import Genre from './genre';
 async function getData(url) {
     const response = await fetch(url);
     const data = await response.json();
@@ -21,11 +22,12 @@ async function getRating(id) {
 async function getMovieId(title) {
     try {
         const encodedTitle = encodeURIComponent(title);
-        const response = await fetch(`https://www.filmweb.pl/api/v1/live/search?query=${encodedTitle}&pageSize=6`, { 
+        const response = await fetch(`https://www.filmweb.pl/api/v1/live/search?query=${encodedTitle}&pageSize=6`, {
             headers: {
                 "X-Locale": "pl_PL",
             },
-            next: { revalidate: 36000 } });
+            next: { revalidate: 36000 }
+        });
         const data = await response.json();
         return data.searchHits[0].id;
     } catch (error) {
@@ -34,7 +36,7 @@ async function getMovieId(title) {
     }
 }
 
-export default async function Movies({ showAvailable}) {
+export default async function Movies({ showAvailable }) {
     // const movies = await getData(`https://www.cinema-city.pl/pl/data-api-service/v1/quickbook/10103/film-events/in-cinema/${cinemaId}/at-date/2024-01-04?attr=&lang=pl_PL`);
 
     const cinemas = [
@@ -53,8 +55,8 @@ export default async function Movies({ showAvailable}) {
     for (const cinema of cinemas) {
 
 
-        const data = await getData(`https://www.cinema-city.pl/pl/data-api-service/v1/quickbook/10103/film-events/in-cinema/${cinema.id}/at-date/${date}?attr=&lang=pl_PL`, 
-        { cache: 'no-store' });
+        const data = await getData(`https://www.cinema-city.pl/pl/data-api-service/v1/quickbook/10103/film-events/in-cinema/${cinema.id}/at-date/${date}?attr=&lang=pl_PL`,
+            { cache: 'no-store' });
         events.push(...data.body.events);
         const films = data.body.films.map((film) => {
             const cinemaEvents = data.body.events.filter(event => event.filmId === film.id);
@@ -80,7 +82,6 @@ export default async function Movies({ showAvailable}) {
         }))])];
         return uniqueMovies;
     }, {}));
-
 
     for (const movie of movies) {
         try {
@@ -114,23 +115,32 @@ export default async function Movies({ showAvailable}) {
                             <div className="position-relative">
                                 <Link href={movie.link} >
                                     <div className="position-relative">
-                                    <div className="position-absolute w-100 h-100" style={{ backgroundImage: "linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent)" }}>
-                                    </div>
-                                    <img src={movie.posterLink} className="card-img-top" />
-                                        
+                                        <div className="position-absolute w-100 h-100" style={{ backgroundImage: "linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent)" }}>
+                                        </div>
+                                        <img src={movie.posterLink} className="card-img-top" />
+
                                     </div>
                                 </Link>
 
-                                <div className="position-absolute bottom-0 end-0" data-bs-toggle="tooltip" data-bs-title={movie.count}>
-                                    
-                                    <span className="badge fs-5 m-3 text-bg-secondary"> 
-                                    <img src="https://fwcdn.pl/front/ogfx/icons2/228x228.png" width={16} height={16} className="me-2 mb-1" />
-                                    {movie.rating}</span>
+                                <div className="position-absolute bottom-0 end-0 w-100" data-bs-toggle="tooltip" data-bs-title={movie.count}>
+
+                                    <div className='ps-3 d-flex align-items-center justify-content-end'>
+                                        <span className="badge fs-5 m-3 ms-1 text-bg-secondary">
+                                            <img src="https://fwcdn.pl/front/ogfx/icons2/228x228.png" width={16} height={16} className="me-2 mb-1" />
+                                            {movie.rating}</span>
+                                    </div>
                                 </div>
 
                             </div>
                             <div className="card-body">
                                 <h5 className="card-title">{movie.name}</h5>
+                                <p className='mb-0' style={{ color: '#a8a8a8', fontFamily: 'monospace' }} >
+                                    <span className='me-2'>
+                                        {movie.length}min
+                                    </span>
+                                    •
+                                    <Genre className='ms-2' attributeIds={movie.attributeIds}></Genre>
+                                </p>
                                 {movie.cinema.map(cinema => (
                                     <div key={cinema.id}>
                                         {cinema.hours.length > 0 && (
