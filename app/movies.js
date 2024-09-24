@@ -10,7 +10,7 @@ async function getData(url) {
 
 async function getRating(id) {
     try {
-        const response = await fetch(`https://www.filmweb.pl/api/v1/film/${id}/rating`, { next: { revalidate: 3600 } });
+        const response = await fetch(`https://www.filmweb.pl/api/v1/film/${id}/rating`, { cache: 'no-store' });
         const data = await response.json();
         return data;
     } catch (error) {
@@ -26,7 +26,7 @@ async function getMovieId(title) {
             headers: {
                 "X-Locale": "pl_PL",
             },
-            next: { revalidate: 36000 }
+            cache: 'no-store'
         });
         const data = await response.json();
         return data.searchHits[0].id;
